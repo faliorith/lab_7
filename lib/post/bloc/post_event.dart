@@ -1,3 +1,4 @@
+// post_event.dart
 part of 'post_bloc.dart';
 
 sealed class PostEvent extends Equatable {
@@ -7,6 +8,4 @@ sealed class PostEvent extends Equatable {
   List<Object> get props => [];
 }
 
-final class GetPostEvent extends PostEvent{}
-
-
+final class GetPostEvent extends PostEvent {}

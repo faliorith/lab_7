@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_lab_7/post/pages/post_page.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter_lab_7/pages/welcome_page.dart';
 
-void main() {
+void main() async {
+  // Инициализация Hive
+  await Hive.initFlutter();
+
   runApp(const MyApp());
 }
 
@@ -9,19 +13,15 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  @override
-  Widget build (BuildContext context) {
+  Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Post Page',
+      title: 'Flutter Lab 7',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        useMaterial3: true,
       ),
-      home: const PostPage()
+      home: const WelcomePage(),
     );
   }
 }
- 
