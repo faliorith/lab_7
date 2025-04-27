@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_lab_7/services/auth_service.dart';
 import 'package:flutter_lab_7/pages/home_page.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
@@ -29,58 +27,50 @@ class _RegistrationPageState extends State<RegistrationPage> {
     super.dispose();
   }
 
-  Future<void> _sendPushNotification(String title, String body) async {
-    final token = await FirebaseMessaging.instance.getToken();
-    if (token != null) {
-      print('Отправка уведомления: \$title - \$body к токену: \$token');
-      // Здесь вы можете настроить реальную отправку через сервер
-    }
-  }
+  Future<void> _register() async {
+    if (!_formKey.currentState!.validate()) return;
 
-Future<void> _register() async {
-  if (_formKey.currentState!.validate()) {
     setState(() => _isLoading = true);
 
     try {
       final user = await _authService.register(
-        _emailController.text,
-        _passwordController.text,
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+        _nameController.text.trim(),
+        DateTime.now().toString(), // Example additional argument
       );
 
-      if (user != null && mounted) {
-        // Сохраняем дополнительную информацию в Realtime Database
-        await _database.child('users').child(user.uid).set({
-          'name': _nameController.text,
-          'email': _emailController.text,
+      if (user != null) {
+        final sanitizedEmail = _emailController.text.replaceAll('.', ',');
+        await _database.child('users').child(sanitizedEmail).set({
+          'name': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'uid': user.uid,
         });
 
-        await _sendPushNotification(
-          'Регистрация успешна',
-          'Добро пожаловать, ${_nameController.text}!',
-        );
-
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomePage()),
         );
-      } else if (mounted) {
+      } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ошибка регистрации')),
+          const SnackBar(content: Text('Ошибка регистрации: пользователь уже существует')),
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка: $e')),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
   }
-}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,10 +79,7 @@ Future<void> _register() async {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFE6E6FA),
-              Color(0xFFD8BFD8),
-            ],
+            colors: [Color(0xFFE6E6FA), Color(0xFFD8BFD8)],
           ),
         ),
         child: SafeArea(
@@ -113,70 +100,35 @@ Future<void> _register() async {
                       ),
                     ),
                     const SizedBox(height: 40),
-                    TextFormField(
+                    _buildTextField(
                       controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: 'Имя',
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        prefixIcon: const Icon(Icons.person, color: Color(0xFF4B0082)),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Пожалуйста, введите имя';
-                        }
-                        return null;
-                      },
+                      label: 'Имя',
+                      icon: Icons.person,
+                      validator: (value) => value == null || value.isEmpty
+                          ? 'Пожалуйста, введите имя'
+                          : null,
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
+                    _buildTextField(
                       controller: _emailController,
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        prefixIcon: const Icon(Icons.email, color: Color(0xFF4B0082)),
-                      ),
+                      label: 'Email',
+                      icon: Icons.email,
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Пожалуйста, введите email';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Пожалуйста, введите корректный email';
-                        }
+                        if (value == null || value.isEmpty) return 'Пожалуйста, введите email';
+                        if (!value.contains('@')) return 'Пожалуйста, введите корректный email';
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
+                    _buildTextField(
                       controller: _passwordController,
-                      decoration: InputDecoration(
-                        labelText: 'Пароль',
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        prefixIcon: const Icon(Icons.lock, color: Color(0xFF4B0082)),
-                      ),
+                      label: 'Пароль',
+                      icon: Icons.lock,
                       obscureText: true,
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Пожалуйста, введите пароль';
-                        }
-                        if (value.length < 6) {
-                          return 'Пароль должен быть минимум 6 символов';
-                        }
+                        if (value == null || value.isEmpty) return 'Пожалуйста, введите пароль';
+                        if (value.length < 6) return 'Пароль должен быть минимум 6 символов';
                         return null;
                       },
                     ),
@@ -205,9 +157,7 @@ Future<void> _register() async {
                     ),
                     const SizedBox(height: 16),
                     TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
+                      onPressed: () => Navigator.pop(context),
                       child: const Text(
                         'Уже есть аккаунт? Войти',
                         style: TextStyle(
@@ -223,6 +173,32 @@ Future<void> _register() async {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscureText = false,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        prefixIcon: Icon(icon, color: Color(0xFF4B0082)),
+      ),
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      validator: validator,
     );
   }
 }

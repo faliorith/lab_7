@@ -41,7 +41,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   Future<void> _loadUser() async {
     final user = await _authService.getCurrentUser();
     if (mounted) {
-      setState(() => _currentUser = user);
+      setState(() => _currentUser = user as User?);
     }
   }
 

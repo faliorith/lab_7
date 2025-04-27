@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+package="com.example.lab_7"
     <application
         android:label="flutter_lab_7"
         android:name="${faliorith}"

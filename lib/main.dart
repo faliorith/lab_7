@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_lab_7/pages/login_page.dart';
-import 'package:flutter_lab_7/pages/home_page.dart';
-import 'package:flutter_lab_7/pages/register_page.dart';
-import 'package:flutter_lab_7/services/auth_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() async {
